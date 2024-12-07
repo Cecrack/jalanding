@@ -133,8 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 tableBody.appendChild(row);
             });
         } catch (error) {
-            console.error("Error al cargar los usuarios:", error);
-            alert("Hubo un problema al cargar los usuarios. Revisa la consola para más detalles.");
         }
     };
     
