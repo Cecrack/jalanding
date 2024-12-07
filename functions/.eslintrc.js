@@ -1,28 +1,17 @@
 module.exports = {
   env: {
-    es6: true,
-    node: true,
-  },
-  parserOptions: {
-    "ecmaVersion": 2018,
+    node: true, // Esto le dice a ESLint que el código está destinado a un entorno Node.js
+    browser: true, // También puedes mantener el soporte para navegador si es necesario
   },
   extends: [
     "eslint:recommended",
-    "google",
+    "plugin:@eslint/js/recommended" // Agregar tu configuración de ESLint recomendada
   ],
-  rules: {
-    "no-restricted-globals": ["error", "name", "length"],
-    "prefer-arrow-callback": "error",
-    "quotes": ["error", "double", {"allowTemplateLiterals": true}],
+  parserOptions: {
+    ecmaVersion: 12, // Asegúrate de usar una versión compatible de ECMAScript
+    sourceType: "module", // Usa el tipo de módulo ES6 si estás usando import/export
   },
-  overrides: [
-    {
-      files: ["**/*.spec.*"],
-      env: {
-        mocha: true,
-      },
-      rules: {},
-    },
-  ],
-  globals: {},
+  rules: {
+    // Puedes agregar o modificar reglas específicas aquí si lo necesitas
+  }
 };

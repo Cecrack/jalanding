@@ -91,34 +91,54 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
-
-    const getUsers = () => {
-        const adminList = document.getElementById("admin-list");
+    const getUsers = async () => {
         const tableBody = document.querySelector("#users-table tbody");
     
-        // Simulando los usuarios que vendrían desde Firebase
-        const users = [
-            { email: 'juanescutia@gmail.com', uid: 'user1',rol:'usuario'},
-            { email: 'juancarlo@gmail.com', uid: 'user2',rol:'usuario' },
-            { email: 'misrrafan777@gmail.com', uid: 'user3' ,rol:'usuario'},
-            { email: 'chaves@gmail.com', uid: 'user4' ,rol:'usuario'},
-            { email: 'cecraft1@gmail.com', uid: 'user5',rol:'usuario' },
-            { email: 'q@gmail.com', uid: 'user6' ,rol:'usuario'},
-            { email: 'h@gmail.com', uid: 'user7',rol:'Administrador' },
-            { email: 'fierrosergio2907@gmail.com', uid: 'user8',rol:'usuario'}
-        ];
+        try {
+            // Obtener el token del usuario actual
+            const user = auth.currentUser; // Usamos la instancia de `auth` inicializada
+            if (!user) {
+                throw new Error("No hay un usuario autenticado.");
+            }
+            const userToken = await user.getIdToken();
     
-        // Agregar los usuarios a la tabla
-        users.forEach(user => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${user.email}</td>
-                <td>${user.uid}</td>
-                <td>${user.rol}</td>
-            `;
-            tableBody.appendChild(row);
-        });
+            // Cambiar el URL por el de tu Firebase Cloud Function
+            const response = await fetch("https://us-central1-ganaderia-d357d.cloudfunctions.net/getUsers", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${userToken}` // Incluimos el token de autenticación
+                }
+            });
+    
+            if (!response.ok) {
+                throw new Error("Error al obtener usuarios: " + response.statusText);
+            }
+    
+            const data = await response.json();
+            const users = data.users;
+    
+            // Limpiar y llenar la tabla con los datos de los usuarios
+            tableBody.innerHTML = "";
+    
+            users.forEach(user => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${user.email}</td>
+                    <td>${user.uid}</td>
+                    <td>${user.provider}</td>
+                    <td>${new Date(user.creationTime).toLocaleDateString()}</td>
+                    <td>${new Date(user.lastSignInTime).toLocaleDateString()}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } catch (error) {
+            console.error("Error al cargar los usuarios:", error);
+            alert("Hubo un problema al cargar los usuarios. Revisa la consola para más detalles.");
+        }
     };
+    
+    
     
      // Configuración de títulos de página
      const pageTitles = {
@@ -256,4 +276,101 @@ if (adminPanelBtn) {
             navMenu.classList.toggle('show'); // Agregar o quitar la clase "show"
         });
     }
+
+    // Función para abrir la cámara y tomar una foto
+function openCamera() {
+    // Crear un elemento de video para mostrar la cámara
+    const videoElement = document.createElement("video");
+    videoElement.setAttribute("autoplay", "true");
+    videoElement.setAttribute("playsinline", "true");
+    videoElement.style.width = "100%";
+    videoElement.style.height = "auto";
+
+    // Crear un contenedor modal
+    const cameraModal = document.createElement("div");
+    cameraModal.style.position = "fixed";
+    cameraModal.style.top = "0";
+    cameraModal.style.left = "0";
+    cameraModal.style.width = "100vw";
+    cameraModal.style.height = "100vh";
+    cameraModal.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+    cameraModal.style.display = "flex";
+    cameraModal.style.flexDirection = "column";
+    cameraModal.style.justifyContent = "center";
+    cameraModal.style.alignItems = "center";
+    cameraModal.style.zIndex = "200";
+
+    // Botón para tomar foto
+    const captureButton = document.createElement("button");
+    captureButton.textContent = "Tomar foto";
+    captureButton.style.marginTop = "10px";
+    captureButton.style.padding = "10px 20px";
+    captureButton.style.backgroundColor = "#4CAF50";
+    captureButton.style.color = "#fff";
+    captureButton.style.border = "none";
+    captureButton.style.cursor = "pointer";
+
+    // Botón para cerrar la cámara
+    const closeButton = document.createElement("button");
+    closeButton.textContent = "Cerrar cámara";
+    closeButton.style.marginTop = "10px";
+    closeButton.style.padding = "10px 20px";
+    closeButton.style.backgroundColor = "#f00";
+    closeButton.style.color = "#fff";
+    closeButton.style.border = "none";
+    closeButton.style.cursor = "pointer";
+
+    // Contenedor para la foto capturada
+    const photoContainer = document.createElement("div");
+    photoContainer.style.marginTop = "20px";
+
+    // Evento para cerrar la cámara
+    closeButton.onclick = () => {
+        const stream = videoElement.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop()); // Detener la cámara
+        document.body.removeChild(cameraModal); // Eliminar modal
+    };
+
+    // Evento para capturar una foto
+    captureButton.onclick = () => {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+
+        // Dibujar el fotograma actual del video en el canvas
+        context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+        // Crear una imagen a partir del canvas
+        const img = document.createElement("img");
+        img.src = canvas.toDataURL("image/png"); // Convertir a formato base64
+        img.style.width = "300px";
+        img.style.marginTop = "10px";
+
+        // Mostrar la foto capturada en el contenedor
+        photoContainer.innerHTML = ""; // Limpiar contenedor
+        photoContainer.appendChild(img);
+    };
+
+    // Agregar los elementos al modal
+    cameraModal.appendChild(videoElement);
+    cameraModal.appendChild(captureButton);
+    cameraModal.appendChild(closeButton);
+    cameraModal.appendChild(photoContainer);
+    document.body.appendChild(cameraModal);
+
+    // Solicitar acceso a la cámara
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            videoElement.srcObject = stream;
+        })
+        .catch(error => {
+            alert("No se pudo acceder a la cámara: " + error.message);
+            document.body.removeChild(cameraModal);
+        });
+}
+
+// Vincular la función al botón de "Abrir cámara"
+document.querySelector(".camera-btn").addEventListener("click", openCamera);
 });
